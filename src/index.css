@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-background: #05080f;
+  --color-accent: #00e6a0;
+  --color-accent-foreground: #05080f;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-white font-sans antialiased;
+  }
+}
+
+.glass-card {
+  @apply bg-white/5 border border-white/10 backdrop-blur-xl;
+}
+
+.accent-glow {
+  box-shadow: 0 0 20px rgba(0, 230, 160, 0.2);
+}

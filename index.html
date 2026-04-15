@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UP2FLY - Buy USDT Instantly</title>
+    <meta name="description" content="Secure and instant USDT on-ramp service. Pay with card and get USDT delivered to your TRC20 wallet." />
+  </head>
+  <body>
+    <script>
+      (function() {
+        try {
+          var desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+          if (desc && !desc.writable && !desc.set && desc.configurable) {
+            var originalFetch = window.fetch;
+            Object.defineProperty(window, 'fetch', {
+              value: originalFetch,
+              writable: true,
+              configurable: true
+            });
+          }
+        } catch (e) {
+          console.warn('Fetch patch failed:', e);
+        }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
