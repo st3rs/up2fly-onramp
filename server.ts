@@ -3,6 +3,10 @@ import axios from "axios";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 const require = createRequire(import.meta.url);
 const { authenticator } = require("otplib");
 import QRCode from "qrcode";
@@ -17,13 +21,38 @@ app.use(express.json());
 // API Routes
 app.post("/api/admin/login", (req, res) => {
   const { password } = req.body;
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  let adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 
-  if (password === adminPassword) {
-    res.json({ success: true, requires2FA: true });
-  } else {
-    res.status(401).json({ success: false, message: "Invalid password" });
+  // Remove any surrounding quotes that might have been added by environment managers
+  adminPassword = adminPassword.replace(/^["']|["']$/g, "");
+
+  console.log("--- Login Attempt Debug ---");
+  console.log("Received password length:", password?.length || 0);
+  console.log("Expected password length:", adminPassword.length);
+  
+  if (!process.env.ADMIN_PASSWORD) {
+    console.warn("ADMIN_PASSWORD not set in environment, using 'admin123' as fallback");
   }
+
+  const cleanInput = (password || "").trim();
+  const cleanExpected = adminPassword.trim();
+
+  if (cleanInput === cleanExpected) {
+    console.log("Login successful");
+    res.json({ success: true, requires2FA: true, token: "admin-session-token" });
+  } else {
+    console.log("Login failed: Password mismatch");
+    res.status(401).json({ 
+      success: false, 
+      message: "Invalid password",
+      debug: process.env.NODE_ENV !== "production" ? {
+        receivedLen: cleanInput.length,
+        expectedLen: cleanExpected.length,
+        envSet: !!process.env.ADMIN_PASSWORD
+      } : undefined
+    });
+  }
+  console.log("---------------------------");
 });
 
 app.post("/api/admin/verify-2fa", (req, res) => {

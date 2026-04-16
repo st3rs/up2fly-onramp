@@ -91,8 +91,13 @@ export default function Admin() {
           setIsAuthenticated(true);
         }
       }
-    } catch (error) {
-      setLoginError('Invalid password');
+    } catch (error: any) {
+      const debug = error.response?.data?.debug;
+      if (debug) {
+        setLoginError(`Invalid password. (Server expected ${debug.expectedLen} chars, received ${debug.receivedLen} chars. Env set: ${debug.envSet ? 'Yes' : 'No'})`);
+      } else {
+        setLoginError('Invalid password');
+      }
     } finally {
       setIsLoggingIn(false);
     }
