@@ -10,6 +10,8 @@ export default function BuyCard() {
   const { address, isConnected } = useAccount();
   const [usdAmount, setUsdAmount] = useState<string>('100');
   const [walletAddress, setWalletAddress] = useState<string>('');
+  const [usdError, setUsdError] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [usdtPrice, setUsdtPrice] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [markup, setMarkup] = useState(3.5); // Default 3.5%
@@ -53,16 +55,47 @@ export default function BuyCard() {
   }, []);
 
   const amount = parseFloat(usdAmount) || 0;
-  const isAmountValid = amount >= minAmount;
   const fee = amount * (markup / 100);
   const netAmount = amount - fee;
   const usdtToReceive = netAmount / usdtPrice;
 
+  const validateUsd = (val: string) => {
+    if (!val) return "Amount is required";
+    const num = parseFloat(val);
+    if (isNaN(num)) return "Invalid amount";
+    if (num < minAmount) return `Minimum purchase is $${minAmount} USD`;
+    if (num > 20000) return "Maximum purchase is $20,000 USD";
+    return null;
+  };
+
+  const validateWallet = (val: string) => {
+    if (!val) return "Wallet address is required";
+    // TRC20 Regex: Starts with T, 34 chars, alphanumeric
+    const trc20Regex = /^T[A-Za-z1-9]{33}$/;
+    if (!trc20Regex.test(val)) return "Invalid TRC20 wallet address";
+    return null;
+  };
+
+  const handleUsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setUsdAmount(val);
+    setUsdError(validateUsd(val));
+  };
+
+  const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setWalletAddress(val);
+    setWalletError(validateWallet(val));
+  };
+
   const handlePay = () => {
-    if (!walletAddress || !usdAmount) {
-      alert('Please fill in all fields');
-      return;
-    }
+    const uErr = validateUsd(usdAmount);
+    const wErr = validateWallet(walletAddress);
+    
+    setUsdError(uErr);
+    setWalletError(wErr);
+
+    if (uErr || wErr) return;
     setShowModal(true);
   };
 
@@ -126,17 +159,17 @@ export default function BuyCard() {
               <input
                 type="number"
                 value={usdAmount}
-                onChange={(e) => setUsdAmount(e.target.value)}
+                onChange={handleUsdChange}
                 className={cn(
                   "w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-xl font-bold focus:outline-none transition-all",
-                  !isAmountValid && usdAmount ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
+                  usdError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
                 )}
                 placeholder="0.00"
               />
             </div>
-            {!isAmountValid && usdAmount && (
+            {usdError && (
               <p className="text-[10px] font-bold text-red-400 uppercase ml-1">
-                Minimum purchase is ${minAmount} USD
+                {usdError}
               </p>
             )}
           </div>
@@ -151,11 +184,19 @@ export default function BuyCard() {
               <input
                 type="text"
                 value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm font-mono focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
+                onChange={handleWalletChange}
+                className={cn(
+                  "w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-sm font-mono focus:outline-none transition-all",
+                  walletError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
+                )}
                 placeholder="T..."
               />
             </div>
+            {walletError && (
+              <p className="text-[10px] font-bold text-red-400 uppercase ml-1">
+                {walletError}
+              </p>
+            )}
           </div>
 
           {/* Summary */}
@@ -182,7 +223,7 @@ export default function BuyCard() {
 
           <button
             onClick={handlePay}
-            disabled={!isAmountValid || !walletAddress}
+            disabled={!!usdError || !!walletError || !usdAmount || !walletAddress}
             className="w-full bg-accent text-accent-foreground py-5 rounded-2xl font-bold text-lg hover:opacity-90 transition-all flex items-center justify-center space-x-2 group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             <span>Pay with Card</span>

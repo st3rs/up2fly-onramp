@@ -21,6 +21,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li><Link to="/privacy" className="text-sm text-white/50 hover:text-accent transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms" className="text-sm text-white/50 hover:text-accent transition-colors">Terms of Service</Link></li>
+              <li><Link to="/up2fly-secure-admin" className="text-sm text-white/50 hover:text-accent transition-colors">Admin Login</Link></li>
             </ul>
           </div>
 

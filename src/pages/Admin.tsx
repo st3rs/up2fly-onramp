@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Settings, ShoppingCart, TrendingUp, Users, DollarSign, Save, AlertCircle, Menu, X, Lock, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { LayoutDashboard, Settings, ShoppingCart, TrendingUp, Users, DollarSign, Save, AlertCircle, Menu, X, Lock, LogOut, ChevronDown, ChevronUp, ArrowRight, CheckCircle2, Shield } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface Order {
   id: string;
@@ -20,6 +21,7 @@ export default function Admin() {
   const [loginStep, setLoginStep] = useState<1 | 2 | 'setup'>(1);
   const [qrCode, setQrCode] = useState<string>('');
   const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'settings' | 'orders'>('stats');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -73,7 +75,12 @@ export default function Admin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!password) {
+      setLoginError('Password is required');
+      return;
+    }
     setLoginError('');
+    setIsLoggingIn(true);
     try {
       const response = await axios.post('/api/admin/login', { password });
       if (response.data.success) {
@@ -86,12 +93,19 @@ export default function Admin() {
       }
     } catch (error) {
       setLoginError('Invalid password');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pin.length !== 6) {
+      setLoginError('Enter 6-digit code');
+      return;
+    }
     setLoginError('');
+    setIsLoggingIn(true);
     try {
       const response = await axios.post('/api/admin/verify-2fa', { pin });
       if (response.data.success) {
@@ -101,6 +115,8 @@ export default function Admin() {
       }
     } catch (error: any) {
       setLoginError(error.response?.data?.message || 'Invalid 2FA code');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -176,101 +192,191 @@ export default function Admin() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
-        <div className="glass-card p-8 rounded-3xl border border-white/5 w-full max-w-md accent-glow">
-          <div className="flex flex-col items-center mb-8">
-            <div className="p-4 bg-accent/10 rounded-2xl mb-4">
-              <Lock className="w-8 h-8 text-accent" />
-            </div>
-            <h1 className="text-2xl font-bold uppercase tracking-tight">Admin Login</h1>
-            <p className="text-sm text-white/40 mt-2 text-center">
-              {loginStep === 1 ? 'Enter your password to continue' : 
-               loginStep === 2 ? 'Enter your 6-digit Google Authenticator code' :
-               'Scan this QR code with Google Authenticator'}
+        <motion.div 
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="glass-card p-8 rounded-3xl border border-white/5 w-full max-w-md accent-glow relative overflow-hidden"
+        >
+          {/* Progress Bar */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+            <motion.div 
+              className="h-full bg-accent"
+              initial={{ width: "33.33%" }}
+              animate={{ 
+                width: loginStep === 1 ? "33.33%" : loginStep === 2 ? "66.66%" : "100%" 
+              }}
+              transition={{ duration: 0.5, ease: "circOut" }}
+            />
+          </div>
+
+          <div className="flex flex-col items-center mb-8 pt-4">
+            <motion.div 
+              key={loginStep}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="p-4 bg-accent/10 rounded-2xl mb-4"
+            >
+              {loginStep === 1 ? <Lock className="w-8 h-8 text-accent" /> : <Shield className="w-8 h-8 text-accent" />}
+            </motion.div>
+            <h1 className="text-2xl font-bold uppercase tracking-tight">
+              {loginStep === 1 ? 'Admin Login' : 'Security Verification'}
+            </h1>
+            <p className="text-sm text-white/40 mt-2 text-center max-w-[280px]">
+              {loginStep === 1 ? 'Enter your administrative password to access the dashboard' : 
+               loginStep === 2 ? 'Enter the 6-digit code from your Google Authenticator app' :
+               'Scan this QR code with Google Authenticator to set up 2FA'}
             </p>
           </div>
 
-          {loginStep === 1 ? (
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-white/40 ml-1">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
-                  placeholder="••••••••"
-                  autoFocus
-                />
-                {loginError && <p className="text-xs text-red-400 ml-1">{loginError}</p>}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold hover:opacity-90 transition-all active:scale-[0.98]"
+          <AnimatePresence mode="wait">
+            {loginStep === 1 ? (
+              <motion.form 
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleLogin} 
+                className="space-y-6"
               >
-                Next Step
-              </button>
-            </form>
-          ) : loginStep === 2 ? (
-            <form onSubmit={handleVerify2FA} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-white/40 ml-1">Authenticator Code</label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-xl sm:text-2xl tracking-[0.5em] sm:tracking-[1em] font-bold focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
-                  placeholder="000000"
-                  autoFocus
-                />
-                {loginError && <p className="text-xs text-red-400 ml-1 text-center">{loginError}</p>}
-              </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase text-white/40 ml-1">Password</label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={cn(
+                        "w-full bg-white/5 border rounded-xl py-4 px-4 focus:outline-none transition-all",
+                        loginError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
+                      )}
+                      placeholder="••••••••"
+                      autoFocus
+                    />
+                  </div>
+                  {loginError && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-red-400 ml-1 flex items-center"
+                    >
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      {loginError}
+                    </motion.p>
+                  )}
+                </div>
 
-              <div className="space-y-3">
                 <button
                   type="submit"
-                  className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold hover:opacity-90 transition-all active:scale-[0.98]"
+                  disabled={isLoggingIn}
+                  className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center space-x-2"
                 >
-                  Verify & Access
+                  {isLoggingIn ? (
+                    <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Continue</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
-                <div className="flex flex-col items-center space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => { setLoginStep(1); setLoginError(''); }}
-                    className="text-xs font-bold uppercase text-white/20 hover:text-white/40 transition-colors"
-                  >
-                    Back to Password
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSetup2FA}
-                    className="text-[10px] font-bold uppercase text-accent/40 hover:text-accent transition-colors"
-                  >
-                    Setup Google Authenticator
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-6 text-center">
-              <div className="bg-white p-4 rounded-2xl inline-block">
-                <img src={qrCode} alt="2FA QR Code" className="w-40 h-40 sm:w-48 sm:h-48" />
-              </div>
-              <p className="text-xs text-white/40 leading-relaxed px-4">
-                1. Install Google Authenticator<br/>
-                2. Scan this QR code<br/>
-                3. Enter the 6-digit code on the next screen
-              </p>
-              <button
-                onClick={() => setLoginStep(2)}
-                className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold hover:opacity-90 transition-all"
+              </motion.form>
+            ) : loginStep === 2 ? (
+              <motion.form 
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleVerify2FA} 
+                className="space-y-6"
               >
-                I've scanned it
-              </button>
-            </div>
-          )}
-        </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase text-white/40 ml-1">Authenticator Code</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                    className={cn(
+                      "w-full bg-white/5 border rounded-xl py-4 px-4 text-center text-xl sm:text-2xl tracking-[0.5em] sm:tracking-[1em] font-bold focus:outline-none transition-all",
+                      loginError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
+                    )}
+                    placeholder="000000"
+                    autoFocus
+                  />
+                  {loginError && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-red-400 ml-1 text-center flex items-center justify-center"
+                    >
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      {loginError}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isLoggingIn}
+                    className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center space-x-2"
+                  >
+                    {isLoggingIn ? (
+                      <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span>Verify & Access</span>
+                      </>
+                    )}
+                  </button>
+                  <div className="flex flex-col items-center space-y-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setLoginStep(1); setLoginError(''); }}
+                      className="text-xs font-bold uppercase text-white/20 hover:text-white/40 transition-colors"
+                    >
+                      Back to Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSetup2FA}
+                      className="text-[10px] font-bold uppercase text-accent/40 hover:text-accent transition-colors border border-accent/10 px-3 py-1.5 rounded-full hover:bg-accent/5"
+                    >
+                      Setup Google Authenticator
+                    </button>
+                  </div>
+                </div>
+              </motion.form>
+            ) : (
+              <motion.div 
+                key="setup"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6 text-center"
+              >
+                <div className="bg-white p-4 rounded-2xl inline-block shadow-xl">
+                  <img src={qrCode} alt="2FA QR Code" className="w-40 h-40 sm:w-48 sm:h-48" />
+                </div>
+                <div className="space-y-3 text-left bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <p className="text-[10px] font-bold uppercase text-white/30 tracking-widest mb-2">Instructions</p>
+                  <p className="text-xs text-white/60 leading-relaxed">
+                    1. Open Google Authenticator app<br/>
+                    2. Tap the "+" icon and select "Scan a QR code"<br/>
+                    3. Scan the image above to link your account
+                  </p>
+                </div>
+                <button
+                  onClick={() => setLoginStep(2)}
+                  className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold hover:opacity-90 transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>I've scanned it</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     );
   }
