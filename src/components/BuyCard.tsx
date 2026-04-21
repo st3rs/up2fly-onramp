@@ -147,7 +147,16 @@ export default function BuyCard() {
         className="glass-card rounded-3xl p-6 md:p-8 w-full max-w-md mx-auto accent-glow"
       >
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-bold uppercase tracking-tight">Buy USDT</h2>
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-bold uppercase tracking-tight">Buy USDT</h2>
+            <img 
+              src="https://cryptologos.cc/logos/tether-usdt-logo.svg" 
+              alt="USDT" 
+              className="w-6 h-6"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+            />
+          </div>
           <div className="flex flex-col items-end">
             <div className="flex items-center space-x-2 bg-accent/10 px-3 py-1 rounded-full">
               <div className={cn("w-2 h-2 rounded-full", priceError ? "bg-red-400" : "bg-accent animate-pulse")} />
@@ -246,6 +255,14 @@ export default function BuyCard() {
           </button>
 
           <div className="pt-2 flex flex-col items-center">
+            <div className="flex items-center justify-center space-x-4 mb-6 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" referrerPolicy="no-referrer" loading="lazy" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" referrerPolicy="no-referrer" loading="lazy" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="AMEX" className="h-6" referrerPolicy="no-referrer" loading="lazy" />
+              <div className="h-4 w-px bg-white/20" />
+              <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" alt="USDT" className="h-5" referrerPolicy="no-referrer" loading="lazy" />
+            </div>
+
             <div className="w-full flex items-center space-x-4 mb-4">
               <div className="h-[1px] flex-1 bg-white/10" />
               <span className="text-[10px] font-bold uppercase text-white/30 tracking-widest">Or Connect Wallet</span>
@@ -313,7 +330,10 @@ export default function BuyCard() {
                 </div>
 
                 <div className="flex justify-between items-center p-4 bg-accent/10 rounded-2xl border border-accent/20">
-                  <span className="text-xs font-bold uppercase text-accent/60">Receive</span>
+                  <div className="flex items-center space-x-2">
+                    <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" alt="USDT" className="w-5 h-5" referrerPolicy="no-referrer" loading="lazy" />
+                    <span className="text-xs font-bold uppercase text-accent/60">Receive</span>
+                  </div>
                   <span className="text-xl font-bold text-accent">{usdtToReceive.toFixed(2)} USDT</span>
                 </div>
 

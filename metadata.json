@@ -1,6 +1,6 @@
 {
-  "name": "UP2FLY - Buy USDT On-Ramp",
-  "description": "Secure and instant USDT on-ramp service. Pay with card and get USDT delivered to your TRC20 wallet.",
+  "name": "UP2FLY - Secure USDT Gateway",
+  "description": "Secure and instant USDT delivery service. Pay with card and get USDT delivered to your TRC20 wallet.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

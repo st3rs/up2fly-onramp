@@ -43,7 +43,7 @@ export default function Home() {
             transition={{ duration: 0.6 }}
           >
             <div className="inline-flex items-center space-x-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full mb-6">
-              <span className="text-xs font-bold uppercase tracking-widest text-accent">On-Ramp Solution</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-accent">Secure USDT Gateway</span>
               <div className="w-1 h-1 bg-white/30 rounded-full" />
               <span className="text-xs font-medium text-white/50">v2.4.0</span>
             </div>

@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://ais-pre-sd3ohmqcx6w5mq5qav54t7-181141938500.asia-southeast1.run.app/favicon.ico" width="100" height="100" alt="UP2FLY Logo">
-  <h1>UP2FLY On-Ramp</h1>
+  <h1>UP2FLY — Secure USDT Gateway</h1>
   <p><b>Enterprise-Grade USDT Infrastructure for the Modern Web</b></p>
   
   [![Powered by TRST](https://img.shields.io/badge/Powered%20by-TRST-6D28D9?style=for-the-badge)](https://github.com/UP2FLY)
@@ -14,7 +14,7 @@
 
 ## ⚡ The Product
 
-**UP2FLY** is a fintech-first USDT on-ramp platform designed to bridge the gap between traditional fiat payments and the Tron blockchain. Built for scale, security, and extreme speed, UP2FLY provides a non-custodial gateway for instant USDT acquisition.
+**UP2FLY** is a fintech-first USDT delivery platform designed to bridge the gap between traditional fiat payments and the Tron blockchain. Built for scale, security, and extreme speed, UP2FLY provides a non-custodial gateway for instant USDT acquisition.
 
 ### 🌟 Why UP2FLY?
 
@@ -75,7 +75,7 @@ npm run dev
 
 ## 📅 Roadmap
 
-- [x] **v1.0**: Core TRC20 On-Ramp Engine
+- [x] **v1.0**: Core TRC20 Delivery Engine
 - [x] **v1.1**: Secure Admin 2FA Dashboard
 - [ ] **v1.2**: Multi-Currency Support (BTC, ETH)
 - [ ] **v1.3**: Integrated KYC/AML Hook Support
