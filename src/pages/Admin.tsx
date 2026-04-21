@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Settings, ShoppingCart, TrendingUp, Users, DollarSign, Save, AlertCircle, Menu, X, Lock, LogOut, ChevronDown, ChevronUp, ArrowRight, CheckCircle2, Shield } from 'lucide-react';
+import { LayoutDashboard, Settings, ShoppingCart, TrendingUp, Users, DollarSign, Save, AlertCircle, Menu, X, Lock, LogOut, ChevronDown, ChevronUp, ArrowRight, CheckCircle2, Shield, Info, Key, Activity } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import axios from 'axios';
@@ -471,80 +471,173 @@ export default function Admin() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="glass-card p-6 md:p-8 rounded-2xl border border-white/5 max-w-2xl">
-              <h2 className="text-xl md:text-2xl font-bold mb-8 uppercase tracking-tight">System Settings</h2>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-white/40 ml-1">Partner UUID</label>
-                    <input
-                      type="text"
-                      value={settings.partnerUuid}
-                      onChange={(e) => setSettings({ ...settings, partnerUuid: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50"
-                      placeholder="uuid-..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-white/40 ml-1">HMAC Key</label>
-                    <input
-                      type="password"
-                      value={settings.hmacKey}
-                      onChange={(e) => setSettings({ ...settings, hmacKey: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50"
-                      placeholder="••••••••"
-                    />
-                  </div>
+            <div className="max-w-3xl space-y-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+                <div>
+                  <h2 className="text-2xl font-bold uppercase tracking-tight">System Configuration</h2>
+                  <p className="text-sm text-white/40">Manage your payment gateway and business logic.</p>
                 </div>
+                <div className="flex items-center space-x-2 bg-accent/10 px-4 py-2 rounded-xl">
+                  <div className={cn("w-2 h-2 rounded-full", settings.mode === 'production' ? "bg-accent shadow-[0_0_8px_#6D28D9]" : "bg-yellow-500")} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
+                    {settings.mode === 'production' ? 'Live Environment' : 'Sandbox Mode'}
+                  </span>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-white/40 ml-1">Markup %</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={settings.markup}
-                      onChange={(e) => setSettings({ ...settings, markup: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50"
-                    />
+              {/* API & Security Section */}
+              <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
+                <div className="bg-white/5 px-6 py-4 border-b border-white/5 flex items-center space-x-3">
+                  <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                    <Key className="w-4 h-4 text-blue-400" />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-white/40 ml-1">Operation Mode</label>
-                    <select
-                      value={settings.mode}
-                      onChange={(e) => setSettings({ ...settings, mode: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50 appearance-none"
-                    >
-                      <option value="sandbox">Sandbox</option>
-                      <option value="production">Production</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-white/40 ml-1">Min Purchase (USD)</label>
-                    <input
-                      type="number"
-                      value={settings.minAmount}
-                      onChange={(e) => setSettings({ ...settings, minAmount: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50"
-                      placeholder="10"
-                    />
+                  <h3 className="text-sm font-bold uppercase tracking-wider">Gateway & Security</h3>
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold uppercase text-white/40 ml-1 flex items-center">
+                          Partner UUID
+                          <div className="group relative ml-2">
+                            <Info className="w-3 h-3 cursor-help text-white/20 hover:text-white/40 transition-colors" />
+                            <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-black/90 text-[10px] rounded-lg hidden group-hover:block border border-white/10 z-50">
+                              Your unique identification key provided by the TRST gateway.
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={settings.partnerUuid}
+                        onChange={(e) => setSettings({ ...settings, partnerUuid: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50 transition-all font-mono text-xs"
+                        placeholder="uuid-..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase text-white/40 ml-1 flex items-center">
+                        HMAC Security Key
+                        <div className="group relative ml-2">
+                          <Shield className="w-3 h-3 cursor-help text-white/20 hover:text-white/40 transition-colors" />
+                          <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-black/90 text-[10px] rounded-lg hidden group-hover:block border border-white/10 z-50">
+                            Used to sign requests and verify webhook signatures. Re-gen if compromised.
+                          </div>
+                        </div>
+                      </label>
+                      <input
+                        type="password"
+                        value={settings.hmacKey}
+                        onChange={(e) => setSettings({ ...settings, hmacKey: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50 transition-all"
+                        placeholder="••••••••"
+                      />
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center text-[10px] md:text-xs text-white/40">
-                    <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span>Changes affect live calculations instantly.</span>
+              {/* Trading & Operation Section */}
+              <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
+                <div className="bg-white/5 px-6 py-4 border-b border-white/5 flex items-center space-x-3">
+                  <div className="p-1.5 bg-accent/10 rounded-lg">
+                    <Activity className="w-4 h-4 text-accent" />
                   </div>
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={saveStatus !== 'idle'}
-                    className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-accent text-accent-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-all disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : 'Save Changes'}</span>
-                  </button>
+                  <h3 className="text-sm font-bold uppercase tracking-wider">Trading Logic</h3>
                 </div>
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase text-white/40 ml-1 flex items-center">
+                        Markup Percentage
+                        <div className="group relative ml-2">
+                          <DollarSign className="w-3 h-3 cursor-help text-white/20 hover:text-white/40 transition-colors" />
+                          <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-black/90 text-[10px] rounded-lg hidden group-hover:block border border-white/10 z-50">
+                            Additional fee added on top of the base market price (e.g., 3.5%).
+                          </div>
+                        </div>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="20"
+                          value={settings.markup}
+                          onChange={(e) => setSettings({ ...settings, markup: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50 transition-all pr-10"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 font-bold">%</span>
+                      </div>
+                      {parseFloat(settings.markup) > 10 && (
+                        <p className="text-[10px] text-yellow-500 font-bold uppercase mt-1">Warning: High markup detected</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase text-white/40 ml-1 flex items-center">
+                        Min Purchase (USD)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 font-bold">$</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={settings.minAmount}
+                          onChange={(e) => setSettings({ ...settings, minAmount: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-8 pr-4 focus:outline-none focus:border-accent/50 transition-all"
+                          placeholder="10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase text-white/40 ml-1">Operation Mode (Global)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => setSettings({ ...settings, mode: 'sandbox' })}
+                        className={cn(
+                          "py-3 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all",
+                          settings.mode === 'sandbox' 
+                            ? "bg-yellow-500/10 border-yellow-500/50 text-yellow-500 shadow-lg" 
+                            : "bg-white/5 border-white/5 text-white/20 hover:bg-white/[0.08]"
+                        )}
+                      >
+                        Sandbox
+                      </button>
+                      <button
+                        onClick={() => setSettings({ ...settings, mode: 'production' })}
+                        className={cn(
+                          "py-3 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all",
+                          settings.mode === 'production' 
+                            ? "bg-accent/10 border-accent/50 text-accent shadow-lg shadow-accent/10" 
+                            : "bg-white/5 border-white/5 text-white/20 hover:bg-white/[0.08]"
+                        )}
+                      >
+                        Production
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-white/20 mt-2 px-1">
+                      Sandbox transactions are simulated. Production mode enables real gateway settlement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Footer */}
+              <div className="glass-card p-6 rounded-2xl border border-white/5 flex flex-col sm:flex-row justify-between items-center gap-6">
+                <div className="flex items-center text-[10px] md:text-xs text-white/40 bg-white/5 px-4 py-2 rounded-lg">
+                  <AlertCircle className="w-4 h-4 mr-2 text-yellow-500 flex-shrink-0" />
+                  <span>Crucial: All changes here instantly affect the public buy interface.</span>
+                </div>
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={saveStatus !== 'idle'}
+                  className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-accent text-accent-foreground px-8 py-4 rounded-xl font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(109,40,217,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  <Save className="w-5 h-5" />
+                  <span>{saveStatus === 'saving' ? 'Syncing...' : saveStatus === 'success' ? 'Deployed!' : 'Save & Deploy'}</span>
+                </button>
               </div>
             </div>
           )}
