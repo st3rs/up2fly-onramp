@@ -14,6 +14,7 @@ export default function BuyCard() {
   const [walletError, setWalletError] = useState<string | null>(null);
   const [usdtPrice, setUsdtPrice] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+  const [priceError, setPriceError] = useState<string | null>(null);
   const [markup, setMarkup] = useState(3.5); // Default 3.5%
   const [minAmount, setMinAmount] = useState(10); // Default $10
   const [showModal, setShowModal] = useState(false);
@@ -28,12 +29,17 @@ export default function BuyCard() {
   useEffect(() => {
     const fetchPrice = async () => {
       try {
+        setPriceError(null);
         const response = await axios.get('/api/price');
         if (response.data && response.data.price) {
           setUsdtPrice(response.data.price);
+        } else {
+          throw new Error('Invalid price data');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching price:', error);
+        const msg = error.response?.data?.message || 'Failed to update live price. Using fallback.';
+        setPriceError(msg);
         // Fallback to 1.00 if API fails
         setUsdtPrice(1.00);
       } finally {
@@ -142,9 +148,18 @@ export default function BuyCard() {
       >
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-bold uppercase tracking-tight">Buy USDT</h2>
-          <div className="flex items-center space-x-2 bg-accent/10 px-3 py-1 rounded-full">
-            <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-            <span className="text-[10px] font-mono font-bold text-accent uppercase">Live Price: ${usdtPrice.toFixed(4)}</span>
+          <div className="flex flex-col items-end">
+            <div className="flex items-center space-x-2 bg-accent/10 px-3 py-1 rounded-full">
+              <div className={cn("w-2 h-2 rounded-full", priceError ? "bg-red-400" : "bg-accent animate-pulse")} />
+              <span className="text-[10px] font-mono font-bold text-accent uppercase">
+                {priceError ? "Price Offline" : `Live Price: $${usdtPrice.toFixed(4)}`}
+              </span>
+            </div>
+            {priceError && (
+              <span className="text-[8px] font-bold text-red-400 uppercase mt-1 tracking-tighter">
+                {priceError}
+              </span>
+            )}
           </div>
         </div>
 

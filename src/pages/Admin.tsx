@@ -25,6 +25,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'stats' | 'settings' | 'orders'>('stats');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
   const [settings, setSettings] = useState({
     partnerUuid: '',
     hmacKey: '',
@@ -48,13 +49,20 @@ export default function Admin() {
 
     // Initial fetch
     const fetchOrders = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        setOrders(data);
+      try {
+        setOrdersError(null);
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        if (data) {
+          setOrders(data);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        setOrdersError('Failed to load orders. Please check your connection.');
       }
     };
 
@@ -145,11 +153,15 @@ export default function Admin() {
 
   const handleSaveSettings = () => {
     setSaveStatus('saving');
-    setTimeout(() => {
+    try {
       localStorage.setItem('up2fly_settings', JSON.stringify(settings));
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 800);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setSaveStatus('idle');
+      alert('Failed to save settings. Local storage might be full or disabled.');
+    }
   };
 
   const stats = [
@@ -542,6 +554,13 @@ export default function Admin() {
               <div className="flex justify-between items-center px-2">
                 <h2 className="text-xl font-bold uppercase tracking-tight">Recent Orders</h2>
               </div>
+
+              {ordersError && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <p className="text-sm text-red-400 font-bold uppercase tracking-tight">{ordersError}</p>
+                </div>
+              )}
 
               {/* Desktop Table */}
               <div className="hidden md:block glass-card rounded-2xl border border-white/5 overflow-hidden">

@@ -117,10 +117,14 @@ app.get("/api/price", async (req, res) => {
       }
     }
 
-    // Fallback
-    res.json({ price: 1.00 });
+    // If all fallbacks fail
+    res.status(503).json({ 
+      error: "Price service temporarily unavailable",
+      message: "We are unable to fetch live market data. Please try again in a few minutes.",
+      fallbackPrice: 1.00
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch price" });
+    res.status(500).json({ error: "Internal server error while fetching price" });
   }
 });
 

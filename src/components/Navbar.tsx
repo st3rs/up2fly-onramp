@@ -1,9 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Rocket, Menu, X } from 'lucide-react';
+import { Rocket, Menu, X, WifiOff } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-background/80 backdrop-blur-md">
@@ -15,6 +29,13 @@ export default function Navbar() {
             </div>
             <span className="text-xl font-bold tracking-tighter uppercase">UP2FLY</span>
           </Link>
+
+          {!isOnline && (
+            <div className="flex items-center space-x-2 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+              <WifiOff className="w-3 h-3 text-red-400" />
+              <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Offline</span>
+            </div>
+          )}
           
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-sm font-medium text-white/70 hover:text-accent transition-colors">Buy USDT</Link>
