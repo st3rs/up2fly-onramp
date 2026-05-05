@@ -31,7 +31,9 @@ export default function Admin() {
     hmacKey: '',
     markup: '3.5',
     mode: 'sandbox',
-    minAmount: '10'
+    minAmount: '10',
+    promptPayName: '',
+    promptPayId: ''
   });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -620,6 +622,56 @@ export default function Admin() {
                     <p className="text-[10px] text-white/20 mt-2 px-1">
                       Sandbox transactions are simulated. Production mode enables real gateway settlement.
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Local Payment Methods Section */}
+              <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
+                <div className="bg-white/5 px-6 py-4 border-b border-white/5 flex items-center space-x-3">
+                  <div className="p-1.5 bg-green-500/10 rounded-lg">
+                    <DollarSign className="w-4 h-4 text-green-400" />
+                  </div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider">Local Payment Methods</h3>
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase text-white/40 ml-1 flex items-center">
+                        PromptPay Account Name
+                        <div className="group relative ml-2">
+                          <Info className="w-3 h-3 cursor-help text-white/20 hover:text-white/40 transition-colors" />
+                          <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-black/90 text-[10px] rounded-lg hidden group-hover:block border border-white/10 z-50">
+                            The name that will appear when users scan the PromptPay QR code.
+                          </div>
+                        </div>
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.promptPayName || ''}
+                        onChange={(e) => setSettings({ ...settings, promptPayName: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50 transition-all font-mono text-xs"
+                        placeholder="Company Co., Ltd."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase text-white/40 ml-1 flex items-center">
+                        PromptPay ID / Phone
+                        <div className="group relative ml-2">
+                          <Shield className="w-3 h-3 cursor-help text-white/20 hover:text-white/40 transition-colors" />
+                          <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-black/90 text-[10px] rounded-lg hidden group-hover:block border border-white/10 z-50">
+                            National ID, Tax ID, or Phone Number registered with PromptPay.
+                          </div>
+                        </div>
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.promptPayId || ''}
+                        onChange={(e) => setSettings({ ...settings, promptPayId: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-accent/50 transition-all"
+                        placeholder="0123456789"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

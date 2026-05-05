@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Wallet, Info, ArrowRight, X, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Wallet, Info, ArrowRight, X, CheckCircle2, QrCode } from 'lucide-react';
 import axios from 'axios';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { useAccount } from 'wagmi';
 import { motion, AnimatePresence } from 'motion/react';
+import generatePayload from 'promptpay-qr';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function BuyCard() {
   const { address, isConnected } = useAccount();
@@ -19,6 +21,12 @@ export default function BuyCard() {
   const [minAmount, setMinAmount] = useState(10); // Default $10
   const [showModal, setShowModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'promptpay'>('card');
+  const [network, setNetwork] = useState<'TRC20' | 'ERC20' | 'BSC' | 'Arbitrum'>('TRC20');
+  const [showQR, setShowQR] = useState(false);
+  const [promptPayName, setPromptPayName] = useState('');
+  const [promptPayId, setPromptPayId] = useState('');
+  const [thbRate, setThbRate] = useState(36.5); // Fallback mock THB rate
 
   useEffect(() => {
     if (isConnected && address) {
@@ -53,6 +61,8 @@ export default function BuyCard() {
       const settings = JSON.parse(savedSettings);
       setMarkup(parseFloat(settings.markup) || 3.5);
       setMinAmount(parseFloat(settings.minAmount) || 10);
+      if (settings.promptPayName) setPromptPayName(settings.promptPayName);
+      if (settings.promptPayId) setPromptPayId(settings.promptPayId);
     }
 
     fetchPrice();
@@ -74,11 +84,15 @@ export default function BuyCard() {
     return null;
   };
 
-  const validateWallet = (val: string) => {
+  const validateWallet = (val: string, net: string) => {
     if (!val) return "Wallet address is required";
-    // TRC20 Regex: Starts with T, 34 chars, alphanumeric
-    const trc20Regex = /^T[A-Za-z1-9]{33}$/;
-    if (!trc20Regex.test(val)) return "Invalid TRC20 wallet address";
+    if (net === 'TRC20') {
+      const trc20Regex = /^T[A-Za-z1-9]{33}$/;
+      if (!trc20Regex.test(val)) return "Invalid TRC20 wallet address";
+    } else {
+      const evmRegex = /^0x[a-fA-F0-9]{40}$/;
+      if (!evmRegex.test(val)) return `Invalid ${net} wallet address`;
+    }
     return null;
   };
 
@@ -91,12 +105,19 @@ export default function BuyCard() {
   const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setWalletAddress(val);
-    setWalletError(validateWallet(val));
+    setWalletError(validateWallet(val, network));
+  };
+
+  const handleNetworkChange = (net: 'TRC20' | 'ERC20' | 'BSC' | 'Arbitrum') => {
+    setNetwork(net);
+    if (walletAddress) {
+      setWalletError(validateWallet(walletAddress, net));
+    }
   };
 
   const handlePay = () => {
     const uErr = validateUsd(usdAmount);
-    const wErr = validateWallet(walletAddress);
+    const wErr = validateWallet(walletAddress, network);
     
     setUsdError(uErr);
     setWalletError(wErr);
@@ -115,8 +136,8 @@ export default function BuyCard() {
           {
             amount: amount,
             usdt_amount: usdtToReceive,
-            wallet_address: walletAddress,
-            status: 'Processing'
+            wallet_address: `${walletAddress} (${network})`,
+            status: paymentMethod === 'promptpay' ? 'Pending Payment' : 'Processing'
           }
         ]);
       
@@ -125,9 +146,25 @@ export default function BuyCard() {
       console.error('Error creating order:', error);
     }
 
+    if (paymentMethod === 'promptpay') {
+      setIsProcessing(false);
+      setShowQR(true);
+      return;
+    }
+
     // Paybis widget URL logic
     const partnerId = JSON.parse(localStorage.getItem('up2fly_settings') || '{}').partnerUuid || 'YOUR_PARTNER_UUID';
-    const paybisUrl = `https://widget.paybis.com/?partnerId=${partnerId}&cryptoAmount=${usdtToReceive.toFixed(2)}&cryptoCurrency=USDT&fiatCurrency=USD&fiatAmount=${usdAmount}&address=${walletAddress}`;
+    
+    // Attempt to map network to Paybis currency format
+    const cryptoCurrencyMap: Record<string, string> = {
+      'TRC20': 'USDT_TRX',
+      'ERC20': 'USDT_ETH',
+      'BSC': 'USDT_BSC',
+      'Arbitrum': 'USDT_ARB'
+    };
+    const mappedCurrency = cryptoCurrencyMap[network] || 'USDT';
+
+    const paybisUrl = `https://widget.paybis.com/?partnerId=${partnerId}&cryptoAmount=${usdtToReceive.toFixed(2)}&cryptoCurrency=${mappedCurrency}&fiatCurrency=USD&fiatAmount=${usdAmount}&address=${walletAddress}`;
     
     // Use window.location.href instead of window.open to avoid pop-up blockers
     setTimeout(() => {
@@ -198,9 +235,28 @@ export default function BuyCard() {
             )}
           </div>
 
+          {/* Network Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase text-white/50 ml-1">USDT Network</label>
+            <div className="flex border border-white/10 rounded-xl overflow-hidden p-1 bg-white/5">
+              {(['TRC20', 'ERC20', 'BSC', 'Arbitrum'] as const).map(n => (
+                <button
+                  key={n}
+                  onClick={() => handleNetworkChange(n)}
+                  className={cn(
+                    "flex-1 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 rounded-lg transition-all",
+                    network === n ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-white/50 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Wallet Input */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-white/50 ml-1">TRC20 Wallet Address</label>
+            <label className="text-xs font-bold uppercase text-white/50 ml-1">{network} Wallet Address</label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <Wallet className="w-5 h-5 text-white/30 group-focus-within:text-accent transition-colors" />
@@ -213,7 +269,7 @@ export default function BuyCard() {
                   "w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-sm font-mono focus:outline-none transition-all",
                   walletError ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
                 )}
-                placeholder="T..."
+                placeholder={network === 'TRC20' ? "T..." : "0x..."}
               />
             </div>
             {walletError && (
@@ -245,12 +301,44 @@ export default function BuyCard() {
             </div>
           </div>
 
+          {/* Payment Method Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase text-white/50 ml-1">Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setPaymentMethod('card')}
+                className={cn(
+                  "p-3 rounded-2xl border flex flex-col items-center justify-center space-y-2 transition-all",
+                  paymentMethod === 'card' ? "bg-accent/10 border-accent text-accent" : "bg-white/5 border-white/10 text-white/50 hover:bg-white/10"
+                )}
+              >
+                <CreditCard className="w-6 h-6" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Credit/Debit</span>
+              </button>
+              {promptPayId && (
+                <button
+                  onClick={() => setPaymentMethod('promptpay')}
+                  className={cn(
+                    "p-3 rounded-2xl border flex flex-col items-center justify-center space-y-2 transition-all",
+                    paymentMethod === 'promptpay' ? "bg-green-500/10 border-green-500 text-green-400" : "bg-white/5 border-white/10 text-white/50 hover:bg-white/10"
+                  )}
+                >
+                  <QrCode className="w-6 h-6" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">PromptPay</span>
+                </button>
+              )}
+            </div>
+          </div>
+
           <button
             onClick={handlePay}
             disabled={!!usdError || !!walletError || !usdAmount || !walletAddress}
-            className="w-full bg-accent text-accent-foreground py-5 rounded-2xl font-bold text-lg hover:opacity-90 transition-all flex items-center justify-center space-x-2 group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+            className={cn(
+              "w-full py-5 rounded-2xl font-bold text-lg hover:opacity-90 transition-all flex items-center justify-center space-x-2 group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+              paymentMethod === 'promptpay' ? "bg-green-500 text-black" : "bg-accent text-accent-foreground"
+            )}
           >
-            <span>Pay with Card</span>
+            <span>{paymentMethod === 'promptpay' ? 'Generate QR Code' : 'Pay with Card'}</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
 
@@ -337,33 +425,51 @@ export default function BuyCard() {
                   <span className="text-xl font-bold text-accent">{usdtToReceive.toFixed(2)} USDT</span>
                 </div>
 
-                <div className="space-y-2 px-1">
+                <div className="space-y-2 px-1 mb-4">
                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-white/30">
                     <span>Network</span>
-                    <span>TRC20 (Tron)</span>
+                    <span>{network}</span>
                   </div>
                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-white/30">
                     <span>Wallet</span>
                     <span className="font-mono">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
                   </div>
                 </div>
+
+                {paymentMethod === 'promptpay' && (
+                  <div className="space-y-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-xl mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-green-400 mb-2">PromptPay Transfer Details</p>
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-white/40">
+                      <span>Account Name</span>
+                      <span className="text-white text-right">{promptPayName || '-'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-white/40">
+                      <span>PromptPay ID</span>
+                      <span className="text-white font-mono">{promptPayId || '-'}</span>
+                    </div>
+                  </div>
+                )}
+
               </div>
 
               <div className="space-y-3">
                 <button
                   onClick={confirmPayment}
                   disabled={isProcessing}
-                  className="w-full bg-accent text-accent-foreground py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:opacity-90 transition-all disabled:opacity-50"
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:opacity-90 transition-all disabled:opacity-50",
+                    paymentMethod === 'promptpay' ? "bg-green-500 text-black" : "bg-accent text-accent-foreground"
+                  )}
                 >
                   {isProcessing ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
-                      <span>Processing Order...</span>
+                      <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                      <span>{paymentMethod === 'promptpay' ? 'Preparing QR...' : 'Processing Order...'}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-5 h-5" />
-                      <span>Confirm & Pay</span>
+                      <span>{paymentMethod === 'promptpay' ? 'Proceed to QR Payment' : 'Confirm & Pay'}</span>
                     </>
                   )}
                 </button>
@@ -378,8 +484,83 @@ export default function BuyCard() {
               </div>
 
               <p className="mt-6 text-[9px] text-center text-white/20 leading-relaxed">
-                By confirming, you agree to our Terms of Service. You will be redirected to Paybis to complete your secure payment.
+                By confirming, you agree to our Terms of Service. {paymentMethod === 'promptpay' ? 'You will be shown a PromptPay QR code to complete the transfer.' : 'You will be redirected to Paybis to complete your secure payment.'}
               </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showQR && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm glass-card rounded-3xl p-8 border border-white/10 shadow-2xl overflow-hidden flex flex-col items-center text-center"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-green-500" />
+              
+              <div className="w-full flex justify-between items-start mb-6">
+                <div className="text-left">
+                  <h3 className="text-xl font-bold uppercase tracking-tight text-white">Scan to Pay</h3>
+                  <p className="text-xs text-green-400 font-bold uppercase tracking-widest mt-1">PromptPay QR</p>
+                </div>
+                <button 
+                  onClick={() => setShowQR(false)}
+                  className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-white/40" />
+                </button>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl shadow-xl mb-6">
+                <QRCodeSVG 
+                  value={generatePayload(promptPayId, { amount: amount * thbRate })} 
+                  size={200}
+                />
+              </div>
+
+              <div className="space-y-4 w-full mb-8">
+                <div className="bg-white/5 rounded-2xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Total to Pay (Est.)</p>
+                  <p className="text-2xl font-bold text-white">฿{(amount * thbRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-white/40 font-mono mt-1">${amount} USD @ {thbRate} THB/USD</p>
+                </div>
+                
+                <div className="space-y-2 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    <span>Account Name</span>
+                    <span className="text-white text-right">{promptPayName || '-'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    <span>PromptPay ID</span>
+                    <span className="text-white font-mono">{promptPayId || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full space-y-3">
+                <button
+                  onClick={() => {
+                    setShowQR(false);
+                    setUsdAmount('');
+                    setWalletAddress('');
+                    alert('Order marked as pending. Please ensure you have transferred the funds. Our system will process the USDT transfer once confirmed.');
+                  }}
+                  className="w-full bg-green-500 text-black py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:opacity-90 transition-all"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>I Have Paid</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
